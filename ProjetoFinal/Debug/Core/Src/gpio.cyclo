@@ -1,0 +1,2 @@
+../Core/Src/gpio.c:42:6:MX_GPIO_Init	1
+../Core/Src/gpio.c:76:6:EXTI15_10_IRQHandler	1
