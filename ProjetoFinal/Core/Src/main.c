@@ -31,6 +31,9 @@
 #include "bitmap.h"
 #include "mpu6050.h"
 #include "stdio.h"
+#include "bmp280.h"
+#include <math.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,8 +60,24 @@ MPU6050_t MPU6050;
 char Buffer1[32];
 char Buffer2[32];
 char Buffer3[32];
+char Buffer4[32];
+
 uint8_t tela=0;
-uint8_t flagit=0;
+uint8_t flagit=0, flagBmp=0;
+
+
+uint32_t tmili;
+uint32_t Valor1 = 0;
+uint32_t Valor2 = 0;
+uint16_t Distancia  = 0;  // cm
+
+
+
+
+
+
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,12 +86,16 @@ void SystemClock_Config(void);
 void System_Start(void);
 void Screens();
 void Update_Screen();
+void Update_BMP();
+static void alerta();
 static void Pos_Servo();
+static float Ler_Nivel();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+BMP280_HandleTypedef bmp280;
+float temperatura, pressao, humidade, altitude;
 /* USER CODE END 0 */
 
 /**
@@ -110,13 +133,31 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC1_Init();
   MX_TIM1_Init();
+  MX_TIM6_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+
+ // INICIALIZAÇÕES
+  //BMP
+  bmp280_init_default_params(&bmp280.params);
+  bmp280.addr = BMP280_I2C_ADDRESS_0;
+  bmp280.i2c = &hi2c1;
+  while(!bmp280_init(&bmp280, &bmp280.params))
+
+
   SSD1306_Init ();
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_ADC_Start(&hadc1);
   while (MPU6050_Init(&hi2c1) == 1);
   System_Start();
+
+  HAL_TIM_Base_Start(&htim3);
+  HAL_GPIO_WritePin(TRIGGER_GPIO_Port, TRIGGER_Pin, GPIO_PIN_RESET);  // TRIG com valor baixo
+
+  HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim2);
+
 
   /* USER CODE END 2 */
 
@@ -124,8 +165,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+
+
+
 	  if(flagit==1){
 		  Update_Screen();
+	  }
+	  else if(flagBmp==1){
+		  Update_BMP();
+
 	  }
 	  Pos_Servo();
 	  HAL_Delay(10);
@@ -215,13 +264,13 @@ void Screens(){
 		SSD1306_Puts ("/s",&Font_7x10, 1);
 
 		SSD1306_GotoXY (0,53);
-		SSD1306_Puts ("Tmp:22",&Font_7x10, 1);
-		SSD1306_DrawCircle(53-7, 53, 2, SSD1306_COLOR_WHITE);
-		SSD1306_GotoXY (56-7,53);
+		SSD1306_Puts ("Tmp:",&Font_7x10, 1);
+		SSD1306_DrawCircle(46, 54, 2, SSD1306_COLOR_WHITE);
+		SSD1306_GotoXY (49,53);
 		SSD1306_Puts ("C",&Font_7x10, 1);
 
 		SSD1306_GotoXY (64,53);
-		SSD1306_Puts ("P:103",&Font_7x10, 1);
+		SSD1306_Puts ("P:",&Font_7x10, 1);
 		SSD1306_GotoXY (99,53);
 		SSD1306_Puts ("kPa",&Font_7x10, 1);
 		SSD1306_UpdateScreen();
@@ -249,13 +298,13 @@ void Screens(){
 			SSD1306_Puts ("g",&Font_7x10, 1);
 
 			SSD1306_GotoXY (0,53);
-			SSD1306_Puts ("Tmp:22",&Font_7x10, 1);
+			SSD1306_Puts ("Tmp:",&Font_7x10, 1);
 			SSD1306_DrawCircle(46, 54, 2, SSD1306_COLOR_WHITE);
 			SSD1306_GotoXY (49,53);
 			SSD1306_Puts ("C",&Font_7x10, 1);
 
 			SSD1306_GotoXY (64,53);
-			SSD1306_Puts ("P:103",&Font_7x10, 1);
+			SSD1306_Puts ("P:",&Font_7x10, 1);
 			SSD1306_GotoXY (99,53);
 			SSD1306_Puts ("kPa",&Font_7x10, 1);
 			SSD1306_UpdateScreen();
@@ -264,7 +313,7 @@ void Screens(){
 	if(tela ==2){
 		SSD1306_Clear();
 		SSD1306_GotoXY (0,0);
-		SSD1306_Puts ("Inclinacao:",&Font_7x10, 1);
+		SSD1306_Puts ("Angulo & Altitude:",&Font_7x10, 1);
 
 
 		SSD1306_GotoXY (0,17);
@@ -276,6 +325,19 @@ void Screens(){
 		SSD1306_Puts ("Y:",&Font_7x10, 1);
 		SSD1306_DrawCircle(74, 30, 2, SSD1306_COLOR_WHITE);
 		SSD1306_UpdateScreen();
+
+		SSD1306_GotoXY (0,41);
+		SSD1306_Puts ("h:",&Font_7x10, 1);
+		SSD1306_GotoXY (74,41);
+		SSD1306_Puts ("m",&Font_7x10, 1);
+		SSD1306_UpdateScreen();
+
+		SSD1306_GotoXY (0,53);
+		SSD1306_Puts ("Tanque:",&Font_7x10, 1);
+		SSD1306_GotoXY (70,53);
+		SSD1306_Puts ("l",&Font_7x10, 1);
+
+
 	}
 
 
@@ -297,6 +359,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == B1_Pin){
 		tela = (tela+1)%3;
 		Screens();
+		Update_BMP();
 	}
 }
 
@@ -312,14 +375,60 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 
-	flagit=1;
+	if (htim->Instance == TIM2){
+		flagit=1;
+	}
+	if (htim->Instance == TIM6){
+		flagBmp=1;
+	}
 
+}
+//Atualiza o BMP e o nível do líquido
+void Update_BMP(){
+	double volume= Ler_Nivel();
+	bmp280_read_float(&bmp280, &temperatura, &pressao, &humidade);
+	altitude = 44330.0 * (1.0 - pow((pressao / (100*1013.25)), 0.1903));
+	sprintf(Buffer1, "%.0f", temperatura);
+	sprintf(Buffer2, "%.0f", pressao/1000);
+	sprintf(Buffer3, "%.1f", altitude);
+	sprintf(Buffer4, "%.2f", volume);
+
+
+
+
+
+	//Atualiza a altitude e o nivel na tela 2
+	if(tela==2){
+		SSD1306_GotoXY (21,41);
+		SSD1306_Puts (Buffer3,&Font_7x10, 1);
+		SSD1306_GotoXY (49,53);
+
+		SSD1306_Puts (Buffer4,&Font_7x10, 1);
+	}
+	else{
+		//Atualiza temperatura e pressão em todas as telas
+		SSD1306_GotoXY (28,53);
+		SSD1306_Puts (Buffer1,&Font_7x10, 1);
+
+		SSD1306_GotoXY (78,53);
+		SSD1306_Puts (Buffer2,&Font_7x10, 1);
+	}
+
+	SSD1306_UpdateScreen();
+	flagBmp=0;
 }
 
 
 void Update_Screen(){
 	MPU6050_Read_All(&hi2c1);
 
+	if(temperatura > 27){
+		alerta();
+	}
+	else{
+		HAL_GPIO_WritePin(GPIOB, BUZZER_Pin, 0);
+		HAL_GPIO_WritePin(GPIOA, LD2_Pin, 0);
+	}
 	if(tela ==0){
 		flagit=0;
 		sprintf(Buffer1, "%.2f", MPU6050.Gx);
@@ -334,7 +443,7 @@ void Update_Screen(){
 		SSD1306_UpdateScreen();
 	}
 
-	if(tela ==1){
+	else if(tela ==1){
 		flagit=0;
 		sprintf(Buffer1, "%.2f", MPU6050.Ax);
 		sprintf(Buffer2, "%.2f", MPU6050.Ay);
@@ -348,7 +457,7 @@ void Update_Screen(){
 		SSD1306_UpdateScreen();
 			}
 
-	if(tela ==2){
+	else if(tela ==2){
 		flagit=0;
 		sprintf(Buffer1, "%.2f", MPU6050.KalmanAngleX);
 		sprintf(Buffer2, "%.2f", MPU6050.KalmanAngleY);
@@ -360,19 +469,81 @@ void Update_Screen(){
 	}
 }
 
-
 static void Pos_Servo(void){
+    static float arr_suavizado =  460;  // Valor inicial
+
+    uint32_t leitura = HAL_ADC_GetValue(&hadc1);
+    float arr;
+
+    // Calcula o valor arr diretamente com base na leitura do ADC
+    arr = (1900.0 / 3.3) * (leitura * 3.3 / 4095.0) + 460;
+
+    // Aplica suavização exponencial (filtro de baixa frequência)
+    arr_suavizado = arr_suavizado * 0.85 + arr * 0.1;  // Fator de suavização (0.9 e 0.1)
+
+    // Atualiza o PWM com o valor suavizado
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (uint16_t)arr_suavizado);
+}
+/*
+static void Pos_Servo(void){
+	static uint32_t leitura_anterior=0;
 	uint32_t leitura = HAL_ADC_GetValue(&hadc1);
+	uint16_t arr;
 
-	//uint32_t cast = leitura*3.3/4095;
-	//uint16_t arr = 2000*cast/3.3;
-
-	uint16_t arr = (1900/3.3)*(leitura*3.3/4095) + 700;
-			//2000*leitura/4095;
-	//static uint16_t arr = 100;
+	//if(abs(leitura_anterior-leitura)>1)
+	 arr = (1900/3.3)*(leitura*3.3/4095) + 700;
 
 	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,arr);
+	leitura_anterior = leitura;
 }
+*/
+static void alerta(void){
+
+	static uint8_t contador =0;
+	HAL_GPIO_TogglePin(GPIOA, LD2_Pin);
+	if(contador ==7){
+		HAL_GPIO_WritePin(GPIOB, BUZZER_Pin, 1);
+	}
+	else if(contador ==15){
+		HAL_GPIO_WritePin(GPIOB, BUZZER_Pin, 0);
+		contador=0;
+	}
+	contador++;
+
+}
+
+static float Ler_Nivel(){
+
+	const double capacidade = 28.4; // altura em cm
+	const double raio = 3.75; // diametro em cm
+	double volume;
+	double restante;
+	const double PI = 3.141592;
+
+	HAL_GPIO_WritePin(TRIGGER_GPIO_Port, TRIGGER_Pin, GPIO_PIN_SET);  // TRIG com valor alto para enviar o pulso sonoro
+	__HAL_TIM_SET_COUNTER(&htim3, 0);
+	while (__HAL_TIM_GET_COUNTER (&htim3) < 10);  // espera de 10 milissegundos de acordo com o datasheet
+	HAL_GPIO_WritePin(TRIGGER_GPIO_Port, TRIGGER_Pin, GPIO_PIN_RESET);  // TRIG com valor baixo para parar de enviar o pulso sonoro
+
+	tmili = HAL_GetTick(); // evita loop infinito
+	// espera até o ECHO tem valor alto
+	while (!(HAL_GPIO_ReadPin (ECHO_GPIO_Port, ECHO_Pin)) && tmili + 10 >  HAL_GetTick());
+	Valor1 = __HAL_TIM_GET_COUNTER (&htim3); // recebe o instante de tempo em que o ECHO recebe valor alto
+
+	tmili = HAL_GetTick(); // evita loop infinito
+	// espera até o ECHO ter valor baixo
+	while ((HAL_GPIO_ReadPin (ECHO_GPIO_Port, ECHO_Pin)) && tmili + 50 > HAL_GetTick());
+	Valor2 = __HAL_TIM_GET_COUNTER (&htim3); // recebe o instante de tempo em que o ECHO recebeu valor baixo
+
+	Distancia = (Valor2-Valor1)* 0.0343/2; // cálculo da distância
+
+	restante = capacidade - Distancia; // cálculo do nível de líquido restante
+	volume = PI * raio * raio * restante/1000; // cálculo do volume de líquido restante
+	return(volume);
+}
+
+
+
 
 /* USER CODE END 4 */
 
