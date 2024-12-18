@@ -22,7 +22,6 @@
 #include "dma.h"
 #include "i2c.h"
 #include "tim.h"
-#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -58,6 +57,7 @@
 MPU6050_t MPU6050;
 float temperatura, pressao, altitude; // variáveis para utilizar no sensor de pressão e temperatura BMP280
 
+// os buffers realizam a conversão dos dados para string, para que sejam passados para o display OLED
 char Buffer1[32];
 char Buffer2[32];
 char Buffer3[32];
@@ -66,8 +66,6 @@ char Buffer4[32];
 // variáveis para controle de feedback do sistema
 uint8_t tela=0;
 uint8_t flagit=0, flagBmp=0;
-
-// variáveis para utilizar no sensor ultrassônico HC-SR04
 
 /* USER CODE END PV */
 
@@ -94,6 +92,7 @@ BMP280_HandleTypedef bmp280;
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -117,7 +116,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART2_UART_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
   MX_ADC1_Init();
@@ -136,7 +134,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // inicialização de PWM
   HAL_ADC_Start(&hadc1); // inicialização de ADC
   while (MPU6050_Init(&hi2c1) == 1); //Inicialização do MPU6050
-  System_Start();
+  System_Start(); // inicialização do sistema
 
   HAL_TIM_Base_Start(&htim3); // inicialização de timer
   HAL_GPIO_WritePin(TRIGGER_GPIO_Port, TRIGGER_Pin, GPIO_PIN_RESET);  // garantia de que o TRIG do HC-SR04 inicie com valor baixo
@@ -153,10 +151,11 @@ int main(void)
 	if(flagit==1){
 		Update_MPU6050();
 	}
+
 	else if(flagBmp==1){
 		Update_BMP_HCSR04();
-
 	}
+
 	Pos_Servo();
     /* USER CODE END WHILE */
 
@@ -309,8 +308,8 @@ void Screens(){
 
 		SSD1306_GotoXY (0,53);
 		SSD1306_Puts ("Tanque:",&Font_7x10, 1);
-		SSD1306_GotoXY (70,53);
-		SSD1306_Puts ("l",&Font_7x10, 1);
+		SSD1306_GotoXY (81,53);
+		SSD1306_Puts ("L",&Font_7x10, 1);
 	}
 }
 
@@ -347,6 +346,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM2){
 		flagit=1;
 	}
+
 	if (htim->Instance == TIM6){
 		flagBmp=1;
 	}
@@ -355,6 +355,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // Atualiza o sensor BMP280 e o nível do líquido a partir da medição através do HC-SR04
 void Update_BMP_HCSR04(){
 	double volume = Ler_Nivel(); // variável que recebe o valor da medição atráves do HC-SR04
+
+	// estrutura condicional para evitar leituras negativas (errôneas) do sensor ultrassônico
+	if(volume < 0){
+		volume = 0;
+	}
+
 	bmp280_read_float(&bmp280, &temperatura, &pressao, NULL); // função que faz a leitura das medições do sensor BMP280
 	altitude = 44330.0 * (1.0 - pow((pressao / (100*1013.25)), 0.1903)); // cálculo da altitude a partir da leitura do sensor BMP280
 	sprintf(Buffer1, "%.0f", temperatura);
@@ -362,7 +368,7 @@ void Update_BMP_HCSR04(){
 	sprintf(Buffer3, "%.1f", altitude);
 	sprintf(Buffer4, "%.2f", volume);
 
-	// atualiza a altitude e o nível do líquido na tela 2
+	// atualiza a altitude e o nível do líquido na tela 3
 	if(tela==2){
 		SSD1306_GotoXY (21,41);
 		SSD1306_Puts (Buffer3,&Font_7x10, 1);
@@ -370,7 +376,7 @@ void Update_BMP_HCSR04(){
 		SSD1306_Puts (Buffer4,&Font_7x10, 1);
 	}
 
-	// atualiza temperatura e pressão em todas as telas
+	// atualiza temperatura e pressão nas telas
 	else{
 		SSD1306_GotoXY (28,53);
 		SSD1306_Puts (Buffer1,&Font_7x10, 1);
@@ -451,18 +457,20 @@ static void Pos_Servo(void){
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (uint16_t)arr_suavizado);
 }
 
-// função que emite alertas sonoros, através do buzzer e, além disso, luminosos, utilizando o LED da F446RE
+// função que emite alertas sonoros (através do buzzer) e, além disso, luminosos, utilizando o LED da F446RE
 static void alerta(void){
-
 	static uint8_t contador = 0; // contador para controle dos ticks do buzzer
 	HAL_GPIO_TogglePin(GPIOA, LD2_Pin);
+
 	if(contador == 7){
 		HAL_GPIO_WritePin(GPIOB, BUZZER_Pin, 1);
 	}
+
 	else if(contador == 15){
 		HAL_GPIO_WritePin(GPIOB, BUZZER_Pin, 0);
 		contador = 0;
 	}
+
 	contador++;
 }
 

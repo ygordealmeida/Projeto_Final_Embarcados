@@ -1,6 +1,4 @@
-Drivers/SSD1306_drive/Src/ssd1306.o: \
- ../Drivers/SSD1306_drive/Src/ssd1306.c \
- C:/Users/Ygor\ de\ Almeida/STM32CubeIDE/workspace_1.16.0/ProjetoFinal/Drivers/SSD1306_drive/Inc/ssd1306.h \
+Core/Src/fonts.o: ../Core/Src/fonts.c ../Core/Inc/fonts.h \
  ../Core/Inc/main.h ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,10 +30,8 @@ Drivers/SSD1306_drive/Src/ssd1306.o: \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- C:/Users/Ygor\ de\ Almeida/STM32CubeIDE/workspace_1.16.0/ProjetoFinal/Drivers/SSD1306_drive/Inc/fonts.h
-C:/Users/Ygor\ de\ Almeida/STM32CubeIDE/workspace_1.16.0/ProjetoFinal/Drivers/SSD1306_drive/Inc/ssd1306.h:
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
+../Core/Inc/fonts.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -69,5 +65,3 @@ C:/Users/Ygor\ de\ Almeida/STM32CubeIDE/workspace_1.16.0/ProjetoFinal/Drivers/SS
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
-../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-C:/Users/Ygor\ de\ Almeida/STM32CubeIDE/workspace_1.16.0/ProjetoFinal/Drivers/SSD1306_drive/Inc/fonts.h:
