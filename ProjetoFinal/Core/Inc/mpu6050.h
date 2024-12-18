@@ -13,10 +13,9 @@
 #include <stdint.h>
 #include "i2c.h"
 
-// MPU6050 structure
+// criação de estrutura para o sensor MPU6050
 typedef struct
 {
-
     int16_t Accel_X_RAW;
     int16_t Accel_Y_RAW;
     int16_t Accel_Z_RAW;
@@ -37,7 +36,7 @@ typedef struct
     double KalmanAngleY;
 } MPU6050_t;
 
-// Kalman structure
+// criação de estrutura do filtro de Kalman para o sensor
 typedef struct
 {
     double Q_angle;
@@ -48,16 +47,16 @@ typedef struct
     double P[2][2];
 } Kalman_t;
 
-uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx);
+uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx); // função de inicialização do sensor
 
-void MPU6050_Read_Accel(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct);
+void MPU6050_Read_Accel(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct); // função de leitura de aceleração do sensor
 
-void MPU6050_Read_Gyro(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct);
+void MPU6050_Read_Gyro(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct); // função de leitura de giroscópio do sensor
 
 void MPU6050_Read_Temp(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct);
 
-void MPU6050_Read_All(I2C_HandleTypeDef *I2Cx);
+void MPU6050_Read_All(I2C_HandleTypeDef *I2Cx); // função de leitura de todas as grandezas
 
-void MPU6050_Process_Data(MPU6050_t *DataStruct);
+void MPU6050_Process_Data(MPU6050_t *DataStruct); // função de processamento de dados
 
-double Kalman_getAngle(Kalman_t *Kalman, double newAngle, double newRate, double dt);
+double Kalman_getAngle(Kalman_t *Kalman, double newAngle, double newRate, double dt); // função que retorna os ângulos a partir do filtro de Kalman

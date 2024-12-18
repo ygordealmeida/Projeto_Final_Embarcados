@@ -28,9 +28,7 @@
 
 #include "bmp280.h"
 
-/**
- * BMP280 registers
- */
+// registradores do BMP280
 #define BMP280_REG_TEMP_XLSB   0xFC /* bits: 7-4 */
 #define BMP280_REG_TEMP_LSB    0xFB
 #define BMP280_REG_TEMP_MSB    0xFA
@@ -51,7 +49,7 @@
 #define BMP280_RESET_VALUE     0xB6
 
 
-
+// função que realiza a inicialização do sensor com configurações default
 void bmp280_init_default_params(bmp280_params_t *params) {
 	params->mode = BMP280_MODE_NORMAL;
 	params->filter = BMP280_FILTER_OFF;
@@ -61,6 +59,7 @@ void bmp280_init_default_params(bmp280_params_t *params) {
 	params->standby = BMP280_STANDBY_250;
 }
 
+// função que realiza a leitura do registrador de 16 bits
 static bool read_register16(BMP280_HandleTypedef *dev, uint8_t addr, uint16_t *value) {
 	uint16_t tx_buff;
 	uint8_t rx_buff[2];
@@ -75,6 +74,7 @@ static bool read_register16(BMP280_HandleTypedef *dev, uint8_t addr, uint16_t *v
 
 }
 
+// função que realiza a leitura de dados
 static inline int read_data(BMP280_HandleTypedef *dev, uint8_t addr, uint8_t *value,
 		uint8_t len) {
 	uint16_t tx_buff;
@@ -86,6 +86,7 @@ static inline int read_data(BMP280_HandleTypedef *dev, uint8_t addr, uint8_t *va
 
 }
 
+// função que realiza a leitura de calibração a partir dos registradores
 static bool read_calibration_data(BMP280_HandleTypedef *dev) {
 
 	if (read_register16(dev, 0x88, &dev->dig_T1)
@@ -108,6 +109,7 @@ static bool read_calibration_data(BMP280_HandleTypedef *dev) {
 	return false;
 }
 
+// função que realiza a calibração dos dados de umidade
 static bool read_hum_calibration_data(BMP280_HandleTypedef *dev) {
 	uint16_t h4, h5;
 
@@ -126,6 +128,7 @@ static bool read_hum_calibration_data(BMP280_HandleTypedef *dev) {
 	return false;
 }
 
+// função que realiza a escrita em um registrador
 static int write_register8(BMP280_HandleTypedef *dev, uint8_t addr, uint8_t value) {
 	uint16_t tx_buff;
 
@@ -137,6 +140,7 @@ static int write_register8(BMP280_HandleTypedef *dev, uint8_t addr, uint8_t valu
 		return true;
 }
 
+// função de inicialização do sensor
 bool bmp280_init(BMP280_HandleTypedef *dev, bmp280_params_t *params) {
 
 	if (dev->addr != BMP280_I2C_ADDRESS_0
@@ -202,6 +206,7 @@ bool bmp280_init(BMP280_HandleTypedef *dev, bmp280_params_t *params) {
 	return true;
 }
 
+// inicialização do sensor em modo forçado
 bool bmp280_force_measurement(BMP280_HandleTypedef *dev) {
 	uint8_t ctrl;
 	if (read_data(dev, BMP280_REG_CTRL, &ctrl, 1))
@@ -214,6 +219,7 @@ bool bmp280_force_measurement(BMP280_HandleTypedef *dev) {
 	return true;
 }
 
+// função que verifica se o BMP280 está realizando leituras
 bool bmp280_is_measuring(BMP280_HandleTypedef *dev) {
 	uint8_t status;
 	if (read_data(dev, BMP280_REG_STATUS, &status, 1))
@@ -224,11 +230,7 @@ bool bmp280_is_measuring(BMP280_HandleTypedef *dev) {
 	return false;
 }
 
-/**
- * Compensation algorithm is taken from BMP280 datasheet.
- *
- * Return value is in degrees Celsius.
- */
+// função de compensação da leitura de temperatura
 static inline int32_t compensate_temperature(BMP280_HandleTypedef *dev, int32_t adc_temp,
 		int32_t *fine_temp) {
 	int32_t var1, var2;
@@ -243,39 +245,7 @@ static inline int32_t compensate_temperature(BMP280_HandleTypedef *dev, int32_t 
 	return (*fine_temp * 5 + 128) >> 8;
 }
 
-/**
- * Compensation algorithm is taken from BMP280 datasheet.
- *
- * Return value is in Pa, 24 integer bits and 8 fractional bits.
- */
-/*
-static inline uint32_t compensate_pressure(BMP280_HandleTypedef *dev, int32_t adc_press,
-		int32_t fine_temp) {
-	int64_t var1, var2, p;
-
-	//var1 = (int64_t) fine_temp - 128000;
-	var1 = ((int64_t)fine_temp/2) - 64000;
-	var2 = var1 * var1 * (int64_t) dev->dig_P6;
-	var2 = var2 + ((var1 * (int64_t) dev->dig_P5) << 17);
-	var2 = var2 + (((int64_t) dev->dig_P4) << 35);
-	var1 = ((var1 * var1 * (int64_t) dev->dig_P3) >> 8)
-			+ ((var1 * (int64_t) dev->dig_P2) << 12);
-	var1 = (((int64_t) 1 << 47) + var1) * ((int64_t) dev->dig_P1) >> 33;
-
-	if (var1 == 0) {
-		return 0;  // avoid exception caused by division by zero
-	}
-
-	p = 1048576 - adc_press;
-	p = (((p << 31) - var2) * 3125) / var1;
-	var1 = ((int64_t) dev->dig_P9 * (p >> 13) * (p >> 13)) >> 25;
-	var2 = ((int64_t) dev->dig_P8 * p) >> 19;
-
-	p = ((p + var1 + var2) >> 8) + ((int64_t) dev->dig_P7 << 4);
-	return p;
-}
-*/
-
+// função de compensação da leitura de pressão
 static inline uint32_t compensate_pressure(BMP280_HandleTypedef *dev, int32_t adc_press,
 		int32_t fine_temp){
 	int64_t var1, var2, p;
@@ -300,11 +270,7 @@ static inline uint32_t compensate_pressure(BMP280_HandleTypedef *dev, int32_t ad
 }
 
 
-/**
- * Compensation algorithm is taken from BME280 datasheet.
- *
- * Return value is in Pa, 24 integer bits and 8 fractional bits.
- */
+// função de compensação da umidade
 static inline uint32_t compensate_humidity(BMP280_HandleTypedef *dev, int32_t adc_hum,
 		int32_t fine_temp) {
 	int32_t v_x1_u32r;
@@ -324,6 +290,7 @@ static inline uint32_t compensate_humidity(BMP280_HandleTypedef *dev, int32_t ad
 	return v_x1_u32r >> 12;
 }
 
+// função de leitura dos dados compensados
 bool bmp280_read_fixed(BMP280_HandleTypedef *dev, int32_t *temperature, uint32_t *pressure,
 		uint32_t *humidity) {
 	int32_t adc_pressure;
@@ -358,6 +325,7 @@ bool bmp280_read_fixed(BMP280_HandleTypedef *dev, int32_t *temperature, uint32_t
 	return true;
 }
 
+// função que realiza a leitura de todos as medições
 bool bmp280_read_float(BMP280_HandleTypedef *dev, float *temperature, float *pressure,
 		float *humidity) {
 	int32_t fixed_temperature;

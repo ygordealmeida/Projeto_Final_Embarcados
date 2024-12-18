@@ -13,22 +13,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**
- * BMP280 or BME280 address is 0x77 if SDO pin is high, and is 0x76 if
- * SDO pin is low.
- */
-
+/* 
+O sensor BMP280 apresenta a mesma construção do sensor BME280, com a diferença sendo que o chip do segundo também realiza medição de umidade.
+Sendo assim, só é possível a identificação entre um e outro a partir da leitura de endereços.
+Esta biblioteca faz a implementação das funções para ambos os sensores, simultaneamente.
+Caso o chip seja o BMP280, só haverá leitura de pressão e temperatura, mesmo que a função seja parametrizada com umidade.
+*/
 #define BMP280_I2C_ADDRESS_0  0x76
 #define BMP280_I2C_ADDRESS_1  0x77
 
 #define BMP280_CHIP_ID  0x58 /* BMP280 has chip-id 0x58 */
 #define BME280_CHIP_ID  0x60 /* BME280 has chip-id 0x60 */
 
-/**
- * Mode of BMP280 module operation.
- * Forced - Measurement is initiated by user.
- * Normal - Continues measurement.
- */
+// modos de operação do sensor
 typedef enum {
     BMP280_MODE_SLEEP = 0,
     BMP280_MODE_FORCED = 1,
@@ -43,9 +40,7 @@ typedef enum {
     BMP280_FILTER_16 = 4
 } BMP280_Filter;
 
-/**
- * Pressure oversampling settings
- */
+// configuração de oversampling da pressão
 typedef enum {
     BMP280_SKIPPED = 0,          /* no measurement  */
     BMP280_ULTRA_LOW_POWER = 1,  /* oversampling x1 */
@@ -55,9 +50,7 @@ typedef enum {
     BMP280_ULTRA_HIGH_RES = 5    /* oversampling x16 */
 } BMP280_Oversampling;
 
-/**
- * Stand by time between measurements in normal mode
- */
+// intervalo de tempo entre medidas
 typedef enum {
     BMP280_STANDBY_05 = 0,      /* stand by time 0.5ms */
     BMP280_STANDBY_62 = 1,      /* stand by time 62.5ms */
@@ -69,10 +62,7 @@ typedef enum {
     BMP280_STANDBY_4000 = 7,    /* stand by time 4s BMP280, 20ms BME280 */
 } BMP280_StandbyTime;
 
-/**
- * Configuration parameters for BMP280 module.
- * Use function bmp280_init_default_params to use default configuration.
- */
+// criação de estrutura para os parâmetros do sensor
 typedef struct {
     BMP280_Mode mode;
     BMP280_Filter filter;
@@ -82,7 +72,7 @@ typedef struct {
     BMP280_StandbyTime standby;
 } bmp280_params_t;
 
-
+// criação de estrutura para o sensor
 typedef struct {
     uint16_t dig_T1;
     int16_t  dig_T2;
@@ -115,62 +105,23 @@ typedef struct {
 
 } BMP280_HandleTypedef;
 
-/**
- * Initialize default parameters.
- * Default configuration:
- *      mode: NORAML
- *      filter: OFF
- *      oversampling: x4
- *      standby time: 250ms
- */
+// inicialização dos parâmetros como default
 void bmp280_init_default_params(bmp280_params_t *params);
 
-/**
- * Initialize BMP280 module, probes for the device, soft resets the device,
- * reads the calibration constants, and configures the device using the supplied
- * parameters. Returns true on success otherwise false.
- *
- * The I2C address is assumed to have been initialized in the dev, and
- * may be either BMP280_I2C_ADDRESS_0 or BMP280_I2C_ADDRESS_1. If the I2C
- * address is unknown then try initializing each in turn.
- *
- * This may be called again to soft reset the device and initialize it again.
- */
+// inicialização do sensor
 bool bmp280_init(BMP280_HandleTypedef *dev, bmp280_params_t *params);
 
-/**
- * Start measurement in forced mode.
- * The module remains in forced mode after this call.
- * Do not call this method in normal mode.
- */
+// inicializa as medidas em modo forçado
 bool bmp280_force_measurement(BMP280_HandleTypedef *dev);
 
-/**
- * Check if BMP280 is busy with measuring temperature/pressure.
- * Return true if BMP280 is busy.
- */
+// função que verifica se o sensor está realizando medidas
 bool bmp280_is_measuring(BMP280_HandleTypedef *dev);
 
-/**
- * Read compensated temperature and pressure data:
- *
- *  Temperature in degrees Celsius times 100.
- *
- *  Pressure in Pascals in fixed point 24 bit integer 8 bit fraction format.
- *
- *  Humidity is optional and only read for the BME280, in percent relative
- *  humidity as a fixed point 22 bit interger and 10 bit fraction format.
- */
+// leitura dos dados compensados
 bool bmp280_read_fixed(BMP280_HandleTypedef *dev, int32_t *temperature,
                        uint32_t *pressure, uint32_t *humidity);
 
-/**
- * Read compensated temperature and pressure data:
- *  Temperature in degrees Celsius.
- *  Pressure in Pascals.
- *  Humidity is optional and only read for the BME280, in percent relative
- *  humidity.
- */
+// leitura dos dados em medidas reais (temperatura em °C, pressão em Pa)
 bool bmp280_read_float(BMP280_HandleTypedef *dev, float *temperature,
                        float *pressure, float *humidity);
 
