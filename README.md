@@ -73,7 +73,7 @@ O sistema realiza as seguintes funções:
 - **ADC1 (IN0)**: Conversão Contínua (12 bits)
 - **TIM1**: PWM CH1 para Servo Motor (50Hz)
 - **TIM2**: Interrupção em 15.625Hz
-- **TIM3**: Medição do tempo das ondas ultrassônicas (15,26 Hz)
+- **TIM3**: Medição do tempo das ondas ultrassônicas
 - **TIM6**: Interrupção em 0.5Hz
 - **GPIO**:
   - **Output**: PA5 (LED), PA6 (Trigger), PB0 (Buzzer)
