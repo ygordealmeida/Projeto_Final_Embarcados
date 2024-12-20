@@ -1,3 +1,9 @@
+
+
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/337c76d6-a1cc-414f-bd90-866fe408b844" alt="V-CC_Color_Basica_TextoAzul" style="width:50%;"/>
+</div>
+
 # Projeto Final - Sistemas Embarcados
 
 ## Autores
@@ -20,13 +26,13 @@ O sistema utiliza sensores especializados e fornece feedback por meio de um disp
 - **BMP280** (sensor de pressão e temperatura)
 - **HC-SR04** (sensor ultrassônico)
 - **Potenciômetro 10k**
-- Botão
+- **Botão**
 
 ### Dispositivos de Saída
 - **HS96L03W2C03** (display)
-- Buzzer
-- Servo Motor **SG-90**
-- LED (verde)
+- **Buzzer**
+- **Servo Motor SG-90**
+- **LED** (verde)
 
 ### Periféricos
 - GPIO
@@ -36,6 +42,13 @@ O sistema utiliza sensores especializados e fornece feedback por meio de um disp
 - I2C
 - DMA
 - PWM
+
+### Diagrama Esquemático
+<img width="1161" alt="diagrama" src="https://github.com/user-attachments/assets/a1ea4dba-a85d-4ab9-87db-ac3febb3c2e3" />
+
+
+
+
 
 ## Software
 
@@ -69,7 +82,7 @@ O sistema realiza as seguintes funções:
 - **DMA**: I2C1RX em Modo Normal
 
 ### Fluxograma
-![Fluxograma do Sistema](docs/fluxograma.png) <!-- Adicione o caminho correto para a imagem do fluxograma -->
+<img src="https://github.com/user-attachments/assets/026f682d-05e4-4d2c-9bf6-80573952431f" alt="Fluxograma" style="width:70%;"/>
 
 ### Interfaces de Display
 - Tela de inicialização.
@@ -83,9 +96,13 @@ O sistema realiza as seguintes funções:
 3. Alimente o sistema e observe os dados no display.
 4. Realize os ajustes necessários para testar cada funcionalidade.
 
-## Licença
-Este projeto é licenciado sob a [MIT License](LICENSE).
-
----
-
 Sinta-se à vontade para contribuir com melhorias e relatórios de problemas!
+![inicializacao](https://github.com/user-attachments/assets/7e48a202-2cc8-4a6a-9daa-15c21c846f7a)
+
+![giroscopio (1)](https://github.com/user-attachments/assets/94ad38d8-515c-40e0-9176-f1fe0b005225)
+
+![acelerometro](https://github.com/user-attachments/assets/0c675352-d013-4506-9d1b-142819104f74)
+
+![angulo](https://github.com/user-attachments/assets/7dd89e6a-546b-42cb-8e9f-cce3baee7e9c)
+
+
